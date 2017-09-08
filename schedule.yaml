@@ -1,0 +1,56 @@
+# recordはtrueかfalseを指定(trueで録音する)
+# jtitleはPodcastで表示するタイトル
+# titleはファイル名に使うタイトル（英数字推奨)
+#
+# chは以下の通り
+# r1,r2,fm NHK
+# tbs TBS
+# qrr 文化放送
+# lfr ニッポン放送
+# nsb 日経ラジオ
+# int FMインターウェイブ
+# fmt Tokyo FM
+# fmj J-Wave
+# agqr A&G+
+#
+# timeは録音開始時間。24時制。時間は5分刻みで指定
+# lengthは録音時間で単位は分。録音マージンは前後30秒あるので考慮必要なし。（NHKは多めが良いかも）
+#
+# cronに以下を記述
+# 4-59/5 * * * * cd path/to/radio/ ; sleep 45;./radiorec.py schedule.yaml
+# flvファイルは貯まるので定期的に消す
+# 7 5 * * * /usr/bin/find ~/radio/data -name '*.flv' -mtime +14 -exec rm {} \;
+
+- record: true
+  jtitle: ロシア語
+  title: russian
+  ch: r2
+  wday: 
+   - '月'
+   - '火'
+   - '水'
+   - '木'
+   - '金'
+  time: '08:50'
+  length: 16
+
+- record: true
+  jtitle: JetStream
+  title: JetStream
+  ch: fmt
+  wday: 
+   - '火'
+   - '水'
+   - '木'
+   - '金'
+   - '土'
+  time: '00:00'
+  length: 55
+
+- record: true
+  jtitle: 内田真礼とおはなししません？
+  title: uchida
+  ch: agqr
+  wday: 土
+  time: '20:30'
+  length: 30
