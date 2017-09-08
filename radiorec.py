@@ -79,7 +79,7 @@ def rec_radiko(ch,length,filename):
 --header="X-Radiko-PartialKey:'+partialkey+'" --no-check-certificate \
 --post-data="\\r\\n" https://radiko.jp/v2/api/auth2_fms -O -'
     auth2_fms_body = subprocess.check_output(cmd,shell=True).decode('utf-8') 
-    print(auth2_fms_body)
+#    print(auth2_fms_body)
 
     cmd = rtmpdump+' --rtmp "'+stream_url+'" --playpath "simul-stream.stream" --app "'+channel[ch]+'" \
 -W '+player_url+' -C S:"" -C S:"" -C S:"" -C S:'+authtoken+' --live -B '+str(length)+' -o '+flv_path
