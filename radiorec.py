@@ -11,10 +11,10 @@ podcast_dir = '/var/www/podcast/'
 podcast_url = 'https://example.jp/~hoge/podcast/'
 
 def rec_nhk(ch,length,path):
-    import re
     import subprocess
     import shutil
-    import time
+
+    delay = 30 #遅延が大きいので調整
 
     if ch == 'r1':
        url='https://nhkradioakr1-i.akamaihd.net/hls/live/511633/1-r1/1-r1-01.m3u8'
@@ -24,9 +24,8 @@ def rec_nhk(ch,length,path):
        url='https://nhkradioakfm-i.akamaihd.net/hls/live/512290/1-fm/1-fm-01.m3u8'
 	
     ffmpeg = shutil.which('ffmpeg') 
-    cmd = ffmpeg+' -i '+url+' -t '+str(length)+' -codec copy '+path
-    time.sleep(35) #遅延が大きいので調整
-    subprocess.check_call(re.split('\s+', cmd.strip()))
+    cmd = sleep+' '+str(delay)+';'+ffmpeg+' -i '+url+' -t '+str(length)+' -codec copy '+path
+    subprocess.check_call(cmd, shell=True)
 
 def rec_radiko(ch,length,filename):
     import re
