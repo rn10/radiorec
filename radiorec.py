@@ -138,6 +138,8 @@ def makepodcast(title,url,path):
             mime = 'audio/mp3'
         if ext == '.mp4':
             mime = 'video/mp4'
+        if ext == '.m4a':
+            mime = 'audio/aac'
         else:
             mime = 'audio/mp4' 
         xml += '''
