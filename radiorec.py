@@ -24,7 +24,10 @@ def rec_nhk(ch,length,path):
        url='https://nhkradioakfm-i.akamaihd.net/hls/live/512290/1-fm/1-fm-01.m3u8'
 	
     ffmpeg = shutil.which('ffmpeg') 
+    sleep = shutil.which('sleep') 
     cmd = sleep+' '+str(delay)+';'+ffmpeg+' -i '+url+' -t '+str(length)+' -codec copy '+path
+#    time.sleep(35) #遅延が大きいので調整
+#    subprocess.check_call(re.split('\s+', cmd.strip()))
     subprocess.check_call(cmd, shell=True)
 
 def rec_radiko(ch,length,filename):
@@ -105,8 +108,12 @@ def encode(input, output ,codec):
 
     if codec == 'aac':
         cmd = ffmpeg+' -y -i '+input+' -codec copy '+output
+    if codec == 'aacradiko':
+        cmd = ffmpeg+' -y -i '+input+' -ab 46k -ar 48k -acodec aac '+output
     elif codec == 'mp4':
         cmd = ffmpeg+' -y -i '+input+' -s 320x240 -acodec copy '+output
+    elif codec == 'mp3':
+        cmd = ffmpeg+' -y -i '+input+' -ab 128k -acodec mp3 '+output
     subprocess.check_call(cmd, shell=True)
 
 def makepodcast(title,url,path):
@@ -204,7 +211,7 @@ def main():
                             rec_nhk(ch, length, path)
                         elif ch in radiko:
                             rec_radiko(ch, length, filename)
-                            encode(flv_dir+filename+'.flv', podcast_dir+title+'/'+filename+'.m4a', 'aac')
+                            encode(flv_dir+filename+'.flv', podcast_dir+title+'/'+filename+'.m4a', 'aacradiko')
                         elif ch in agqr:
                             rec_agqr(length, filename)
                             encode(flv_dir+filename+'.flv', podcast_dir+title+'/'+filename+'.mp4', 'mp4')
