@@ -109,7 +109,7 @@ def encode(input, output ,codec):
     if codec == 'aac':
         cmd = ffmpeg+' -y -i '+input+' -codec copy '+output
     if codec == 'aacradiko':
-        cmd = ffmpeg+' -y -i '+input+' -ab 46k -ar 48k -acodec aac '+output
+        cmd = ffmpeg+' -y -i '+input+' -ab 48k -ar 48k -acodec aac '+output
     elif codec == 'mp4':
         cmd = ffmpeg+' -y -i '+input+' -s 320x240 -acodec copy '+output
     elif codec == 'mp3':
