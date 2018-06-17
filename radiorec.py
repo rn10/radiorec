@@ -92,7 +92,7 @@ def rec_agqr(length, filename):
     import shutil
 
     flv_path = data_dir+filename+'.flv'
-    stream_url = 'rtmp://fms-base2.mitene.ad.jp/agqr/aandg2'
+    stream_url = 'rtmp://fms-base2.mitene.ad.jp/agqr/aandg22'
 
     rtmpdump = shutil.which('rtmpdump')
 
