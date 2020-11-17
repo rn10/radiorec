@@ -25,7 +25,8 @@ def rec_nhk(ch,length,path):
 
     ffmpeg = shutil.which('ffmpeg')
     sleep = shutil.which('sleep')
-    cmd = sleep+' '+str(delay)+';'+ffmpeg+' -i '+url+' -t '+str(length)+' -codec copy '+path
+#    cmd = sleep+' '+str(delay)+';'+ffmpeg+' -loglevel quiet -i '+url+' -t '+str(length)+' -codec copy '+path
+    cmd = sleep+' '+str(delay)+';'+ffmpeg+' -loglevel error -i '+url+' -t '+str(length)+' -codec copy -movflags faststart -bsf:a aac_adtstoasc '+path
 #    time.sleep(35) #遅延が大きいので調整
 #    subprocess.check_call(re.split('\s+', cmd.strip()))
     subprocess.check_call(cmd, shell=True)
@@ -91,13 +92,25 @@ def rec_agqr(length, filename):
     import subprocess
     import shutil
 
-    flv_path = data_dir+filename+'.flv'
-    stream_url = 'rtmp://fms-base1.mitene.ad.jp/agqr/aandg1'
+    delay = 20
 
-    rtmpdump = shutil.which('rtmpdump')
+#    flv_path = data_dir+filename+'.flv'
+#    stream_url = 'rtmp://fms-base1.mitene.ad.jp/agqr/aandg1b'
+#    stream_url = 'rtmp://fms-base1.mitene.ad.jp/agqr/aandg1'
+#    stream_url = 'rtmp://fms-base2.mitene.ad.jp/agqr/aandg1'
+    stream_url = 'https://fms2.uniqueradio.jp/agqr10/aandg1.m3u8'
+    #rtmpdump = shutil.which('rtmpdump')
 
-    cmd = rtmpdump+' -r '+stream_url+' --live -B '+str(length)+' -o '+flv_path
+    #cmd = rtmpdump+' -r '+stream_url+' --live -B '+str(length)+' -o '+flv_path
+    #subprocess.check_call(cmd, shell=True)
+
+    ffmpeg = shutil.which('ffmpeg')
+    sleep = shutil.which('sleep')
+    cmd = sleep+' '+str(delay)+';'+ffmpeg+' -loglevel error -i '+stream_url+' -t '+str(length)+' -codec copy -movflags faststart -bsf:a aac_adtstoasc '+filename
+#    time.sleep(delay) #遅延を調整
+#    subprocess.check_call(re.split('\s+', cmd.strip()))
     subprocess.check_call(cmd, shell=True)
+
 
 
 def encode(input, output ,codec):
@@ -107,13 +120,13 @@ def encode(input, output ,codec):
     ffmpeg = shutil.which('ffmpeg')
 
     if codec == 'aac':
-        cmd = ffmpeg+' -y -i '+input+' -codec copy '+output
+        cmd = ffmpeg+' -loglevel quiet -y -i '+input+' -codec copy '+output
     if codec == 'aacradiko':
-        cmd = ffmpeg+' -y -i '+input+' -ab 48k -ar 48k -acodec aac '+output
+        cmd = ffmpeg+' -loglevel quiet -y -i '+input+' -ab 48k -ar 48k -acodec aac '+output
     elif codec == 'mp4':
-        cmd = ffmpeg+' -y -i '+input+' -s 320x240 -acodec copy '+output
+        cmd = ffmpeg+' -loglevel quiet -y -i '+input+' -s 320x240 -acodec copy '+output
     elif codec == 'mp3':
-        cmd = ffmpeg+' -y -i '+input+' -ab 128k -acodec mp3 '+output
+        cmd = ffmpeg+' -loglevel quiet -y -i '+input+' -ab 128k -acodec mp3 '+output
     subprocess.check_call(cmd, shell=True)
 
 def makepodcast(title,url,path):
@@ -213,8 +226,9 @@ def main():
                             rec_radiko(ch, length, filename)
                             encode(flv_dir+filename+'.flv', podcast_dir+title+'/'+filename+'.mp3', 'mp3')
                         elif ch in agqr:
-                            rec_agqr(length, filename)
-                            encode(flv_dir+filename+'.flv', podcast_dir+title+'/'+filename+'.mp4', 'mp4')
+                            path = podcast_dir+title+'/'+filename+'.m4a'
+                            rec_agqr(length, path)
+#                            encode(flv_dir+filename+'.flv', podcast_dir+title+'/'+filename+'.mp4', 'mp4')
                         makepodcast(item['jtitle'],podcast_url+title+'/',podcast_dir+title+'/')
 
 if __name__ == '__main__': main()
