@@ -1,3 +1,6 @@
+# podcast_dir podcastのファイルを置くディレクトリ
+# podcast_url podcastのurl
+#   pdocastは podcast_url の後に title/podcast.xml をつけて登録
 # recordはtrueかfalseを指定(trueで録音する)
 # jtitleはPodcastで表示するタイトル
 # titleはファイル名に使うタイトル（英数字推奨)
@@ -21,6 +24,11 @@
 # flvファイルは貯まるので定期的に消す
 # 7 5 * * * /usr/bin/find ~/radio/data -name '*.flv' -mtime +14 -exec rm {} \;
 
+path:
+ podcast_dir: '/home/hoge/public_html/podcast/'
+ podcast_url: 'https://example.com/podcast/'
+
+schedule:
 - record: true
   jtitle: ロシア語
   title: russian
