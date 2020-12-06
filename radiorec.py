@@ -1,19 +1,17 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-# radiorec.py をおいたディレクトリ。直下にdataディレクトリが必要
-home = '/home/hoge/radio2/'
-data_dir = home+'data/'
-# podcastのファイルを置くディレクトリ
-podcast_dir = '/var/www/podcast/'
-# podcastのurl
-# pdocastは podcast_url の後に title/podcast.xml をつけて登録
-podcast_url = 'https://example.jp/~hoge/podcast/'
+import subprocess
+import shutil
+
+sleep = shutil.which('sleep')
+wget = shutil.which('wget')
+echo = shutil.which('echo')
+base64 = shutil.which('base64')
+dd = shutil.which('dd')
+ffmpeg = shutil.which('ffmpeg')
 
 def rec_nhk(ch,length,path):
-    import subprocess
-    import shutil
-
     delay = 30 #遅延が大きいので調整
 
     if ch == 'r1':
@@ -23,43 +21,32 @@ def rec_nhk(ch,length,path):
     elif ch == 'fm':
        url='https://nhkradioakfm-i.akamaihd.net/hls/live/512290/1-fm/1-fm-01.m3u8'
 
-    ffmpeg = shutil.which('ffmpeg')
-    sleep = shutil.which('sleep')
-#    cmd = sleep+' '+str(delay)+';'+ffmpeg+' -loglevel quiet -i '+url+' -t '+str(length)+' -codec copy '+path
-    cmd = sleep+' '+str(delay)+';'+ffmpeg+' -loglevel error -i '+url+' -t '+str(length)+' -codec copy -movflags faststart -bsf:a aac_adtstoasc '+path
-#    time.sleep(35) #遅延が大きいので調整
-#    subprocess.check_call(re.split('\s+', cmd.strip()))
+    cmd = sleep+' '+str(delay)+';'+ffmpeg+' \
+     -loglevel error -i '+url+' \
+     -t '+str(length)+' \
+     -codec copy -movflags faststart \
+     -bsf:a aac_adtstoasc ' \
+     +path
     subprocess.check_call(cmd, shell=True)
 
 def rec_radiko(ch,length,filename):
     import re
-    import subprocess
-    import shutil
 
-    flv_path = data_dir+filename+'.flv'
-    playerfile = data_dir+'tmp.swf'
-    keyfile = data_dir+'tmp.png'
-    player_url = 'http://radiko.jp/apps/js/flash/myplayer-release.swf'
-    stream_url = 'rtmpe://f-radiko.smartstream.ne.jp'
+    # http://radiko.jp/apps/js/playerCommon.js
+    radiko_authkey_value="bcd151073c03b352e1ef2fd66c32209da9ca0afa"
+    delay = 15
 
-    channel = {'tbs':'TBS/_definst_', 'qrr':'QRR/_definst_', 'lfr':'LFR/_definst_', 'nsb':'NSB/_definst', 'int':'INT/_definst_', 'fmt':'FMT/_definst_', 'fmj':'FMJ/_definst_'}
+    stream_url = 'http://f-radiko.smartstream.ne.jp/'+ \
+     str.upper(ch)+ \
+     '/_definst_/simul-stream.stream/playlist.m3u8'
 
-    wget = shutil.which('wget')
-    swfextract = shutil.which('swfextract')
-    base64 = shutil.which('base64')
-    dd = shutil.which('dd')
-    rtmpdump = shutil.which('rtmpdump')
-
-    cmd = wget+' -q -O '+playerfile+' '+player_url
-    subprocess.check_call(re.split('\s+', cmd.strip()))
-
-    cmd = swfextract+' -b 12 '+playerfile+' -o '+keyfile
-    subprocess.check_call(re.split('\s+', cmd.strip()))
-
-    cmd = wget+' -q --header="pragma:no-cache" --header="X-Radiko-App:pc_ts" \
---header="X-Radiko-App-Version:4.0.0" --header="X-Radiko-User:test-stream" \
---header="X-Radiko-Device:pc" --no-check-certificate --post-data="\\r\\n" \
---save-headers https://radiko.jp/v2/api/auth1_fms -O -'
+    cmd = wget+' -q --header="pragma: no-cache" \
+     --header="X-Radiko-App: pc_html5" \
+     --header="X-Radiko-App-Version: 0.0.1" \
+     --header="X-Radiko-User: test-stream" \
+     --header="X-Radiko-Device:pc" \
+     --no-check-certificate --post-data="\\r\\n" \
+     --save-headers https://radiko.jp/v2/api/auth1_fms -O -'
     auth1_fms_body = subprocess.check_output(cmd,shell=True).decode('utf-8')
     pattern = r'x-radiko-authtoken: ([\w-]+)'
     authtoken = re.search(pattern, auth1_fms_body, re.IGNORECASE).groups()[0]
@@ -72,53 +59,47 @@ def rec_radiko(ch,length,filename):
 #    print(keyoffset)
 #    print(keylength)
 
-    cmd = dd+' if='+keyfile+' bs=1 skip='+keyoffset+' count='+keylength+' 2>/dev/null | '+base64
+    cmd = echo+' '+radiko_authkey_value+'|' \
+     +dd+' bs=1 skip='+keyoffset+' count='+keylength+' \
+     2>/dev/null | '+base64
     partialkey = subprocess.check_output(cmd, shell=True).rstrip().decode('utf-8')
 #    print(partialkey)
 
-    cmd = wget+' -q --header="pragma:no-cache" --header="X-Radiko-App:pc_ts" \
---header="X-Radiko-App-Version:4.0.0" --header="X-Radiko-User:test-stream" \
---header="X-Radiko-Device:pc" --header="X-Radiko-AuthToken:'+authtoken+'" \
---header="X-Radiko-PartialKey:'+partialkey+'" --no-check-certificate \
---post-data="\\r\\n" https://radiko.jp/v2/api/auth2_fms -O -'
+    cmd = wget+' -q --header="pragma: no-cache" \
+     --header="X-Radiko-User: test-stream" \
+     --header="X-Radiko-Device: pc" \
+     --header="X-Radiko-AuthToken: '+authtoken+'" \
+     --header="X-Radiko-PartialKey: '+partialkey+'" \
+     --no-check-certificate \
+     --post-data="\\r\\n" https://radiko.jp/v2/api/auth2_fms -O -'
     auth2_fms_body = subprocess.check_output(cmd,shell=True).decode('utf-8')
 #    print(auth2_fms_body)
 
-    cmd = rtmpdump+' --rtmp "'+stream_url+'" --playpath "simul-stream.stream" --app "'+channel[ch]+'" \
--W '+player_url+' -C S:"" -C S:"" -C S:"" -C S:'+authtoken+' --live -B '+str(length)+' -o '+flv_path
+    cmd = sleep+' '+str(delay)+';'+ffmpeg+ \
+     ' -loglevel error'+\
+     ' -headers "X-Radiko-Authtoken: '+authtoken+'"'+\
+     ' -i '+stream_url+\
+     ' -t '+str(length) +\
+     ' -codec copy'+\
+     ' -movflags'+\
+     ' -faststart'+\
+     ' -bsf:a aac_adtstoasc'+\
+     ' '+filename
     subprocess.check_call(cmd, shell=True)
 
 def rec_agqr(length, filename):
-    import subprocess
-    import shutil
-
-    delay = 20
-
-#    flv_path = data_dir+filename+'.flv'
-#    stream_url = 'rtmp://fms-base1.mitene.ad.jp/agqr/aandg1b'
-#    stream_url = 'rtmp://fms-base1.mitene.ad.jp/agqr/aandg1'
-#    stream_url = 'rtmp://fms-base2.mitene.ad.jp/agqr/aandg1'
+    delay = 25
     stream_url = 'https://fms2.uniqueradio.jp/agqr10/aandg1.m3u8'
-    #rtmpdump = shutil.which('rtmpdump')
 
-    #cmd = rtmpdump+' -r '+stream_url+' --live -B '+str(length)+' -o '+flv_path
-    #subprocess.check_call(cmd, shell=True)
-
-    ffmpeg = shutil.which('ffmpeg')
-    sleep = shutil.which('sleep')
-    cmd = sleep+' '+str(delay)+';'+ffmpeg+' -loglevel error -i '+stream_url+' -t '+str(length)+' -codec copy -movflags faststart -bsf:a aac_adtstoasc '+filename
-#    time.sleep(delay) #遅延を調整
-#    subprocess.check_call(re.split('\s+', cmd.strip()))
+    cmd = sleep+' '+str(delay)+';'+ffmpeg+ \
+     ' -loglevel error -i '+stream_url+ \
+     ' -t '+str(length)+' \
+     -codec copy -movflags faststart -bsf:a aac_adtstoasc ' \
+     +filename
     subprocess.check_call(cmd, shell=True)
 
 
-
 def encode(input, output ,codec):
-    import shutil
-    import subprocess
-
-    ffmpeg = shutil.which('ffmpeg')
-
     if codec == 'aac':
         cmd = ffmpeg+' -loglevel quiet -y -i '+input+' -codec copy '+output
     if codec == 'aacradiko':
@@ -195,7 +176,7 @@ def main():
     stime = now+datetime.timedelta(minutes=1) #start time
     date = datetime.datetime(stime.year,stime.month,stime.day) #record date
 
-    flv_dir = home+'data/'
+    #flv_dir = home+'data/'
     nhk = ['r1','r2','fm']
     radiko = ['tbs','qrr','lfr','nsb','int','fmt','fmj']
     agqr = ['agqr']
@@ -204,7 +185,14 @@ def main():
         yamltext = f.read()
     data = yaml.safe_load(yamltext)
 
-    for item in data:
+    podcast_dir=data['path']['podcast_dir']
+    podcast_url=data['path']['podcast_url']
+
+    print(podcast_dir)
+    print(podcast_url)
+
+    for item in data['schedule']:
+        print(item)
         if item['record']:  #録音するかどうか
             ch=item['ch']
             title=item['title']
@@ -223,10 +211,11 @@ def main():
                             path = podcast_dir+title+'/'+filename+'.m4a'
                             rec_nhk(ch, length, path)
                         elif ch in radiko:
-                            rec_radiko(ch, length, filename)
-                            encode(flv_dir+filename+'.flv', podcast_dir+title+'/'+filename+'.mp3', 'mp3')
-                        elif ch in agqr:
                             path = podcast_dir+title+'/'+filename+'.m4a'
+                            rec_radiko(ch, length, path)
+#                            encode(flv_dir+filename+'.flv', podcast_dir+title+'/'+filename+'.mp3', 'mp3')
+                        elif ch in agqr:
+                            path = podcast_dir+title+'/'+filename+'.mp4'
                             rec_agqr(length, path)
 #                            encode(flv_dir+filename+'.flv', podcast_dir+title+'/'+filename+'.mp4', 'mp4')
                         makepodcast(item['jtitle'],podcast_url+title+'/',podcast_dir+title+'/')
