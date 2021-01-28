@@ -12,7 +12,7 @@ dd = shutil.which('dd')
 ffmpeg = shutil.which('ffmpeg')
 
 def rec_nhk(ch,length,path):
-    delay = 30 #遅延が大きいので調整
+    delay = 35 #遅延が大きいので調整
 
     if ch == 'r1':
        url='https://nhkradioakr1-i.akamaihd.net/hls/live/511633/1-r1/1-r1-01.m3u8'
@@ -21,12 +21,14 @@ def rec_nhk(ch,length,path):
     elif ch == 'fm':
        url='https://nhkradioakfm-i.akamaihd.net/hls/live/512290/1-fm/1-fm-01.m3u8'
 
-    cmd = sleep+' '+str(delay)+';'+ffmpeg+' \
-     -loglevel error -i '+url+' \
-     -t '+str(length)+' \
-     -codec copy -movflags faststart \
-     -bsf:a aac_adtstoasc ' \
-     +path
+    cmd = sleep+' '+str(delay)+';'+ffmpeg+\
+     ' -loglevel error'+\
+     ' -i '+url+\
+     ' -t '+str(length)+\
+     ' -codec copy'+\
+     ' -movflags'+\
+     ' -faststart'+\
+     ' '+path
     subprocess.check_call(cmd, shell=True)
 
 def rec_radiko(ch,length,filename):
@@ -83,12 +85,11 @@ def rec_radiko(ch,length,filename):
      ' -codec copy'+\
      ' -movflags'+\
      ' -faststart'+\
-     ' -bsf:a aac_adtstoasc'+\
      ' '+filename
     subprocess.check_call(cmd, shell=True)
 
 def rec_agqr(length, filename):
-    delay = 25
+    delay = 40
     stream_url = 'https://fms2.uniqueradio.jp/agqr10/aandg1.m3u8'
 
     cmd = sleep+' '+str(delay)+';'+ffmpeg+ \
@@ -137,12 +138,15 @@ def makepodcast(title,url,path):
 
         if ext == '.mp3':
             mime = 'audio/mp3'
-        if ext == '.mp4':
+        elif ext == '.mp4':
             mime = 'video/mp4'
-        if ext == '.m4a':
+        elif ext == '.m4a':
+            mime = 'audio/aac'
+        elif ext == '.aac':
             mime = 'audio/aac'
         else:
             mime = 'audio/mp4'
+
         xml += '''
     <item>
       <title>{filename_}</title>
@@ -206,18 +210,16 @@ def main():
 
                     if abs((now-ptime).total_seconds()) < 60: #予約した時間かどうか（60秒以内なら予約時間と一致）
                         length = item['length']*60+30
-                        filename = title+'_'+str(date.strftime('%Y%m%d'))
+                        filename = title+'_'+str(ptime.strftime('%Y%m%dT%H%M'))
                         if ch in nhk:
-                            path = podcast_dir+title+'/'+filename+'.m4a'
+                            path = podcast_dir+title+'/'+filename+'.aac'
                             rec_nhk(ch, length, path)
                         elif ch in radiko:
-                            path = podcast_dir+title+'/'+filename+'.m4a'
+                            path = podcast_dir+title+'/'+filename+'.aac'
                             rec_radiko(ch, length, path)
-#                            encode(flv_dir+filename+'.flv', podcast_dir+title+'/'+filename+'.mp3', 'mp3')
                         elif ch in agqr:
                             path = podcast_dir+title+'/'+filename+'.mp4'
                             rec_agqr(length, path)
-#                            encode(flv_dir+filename+'.flv', podcast_dir+title+'/'+filename+'.mp4', 'mp4')
                         makepodcast(item['jtitle'],podcast_url+title+'/',podcast_dir+title+'/')
 
 if __name__ == '__main__': main()
