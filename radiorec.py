@@ -15,21 +15,25 @@ def rec_nhk(ch,length,path):
     delay = 35 #遅延が大きいので調整
 
     if ch == 'r1':
-       url='https://nhkradioakr1-i.akamaihd.net/hls/live/511633/1-r1/1-r1-01.m3u8'
+       url='https://radio-stream.nhk.jp/hls/live/2023229/nhkradiruakr1/master48k.m3u8'
     elif ch == 'r2':
-       url='https://nhkradioakr2-i.akamaihd.net/hls/live/511929/1-r2/1-r2-01.m3u8'
+       url='https://radio-stream.nhk.jp/hls/live/2023501/nhkradiruakr2/master48k.m3u8'
     elif ch == 'fm':
-       url='https://nhkradioakfm-i.akamaihd.net/hls/live/512290/1-fm/1-fm-01.m3u8'
+       url='https://radio-stream.nhk.jp/hls/live/2023507/nhkradiruakfm/master48k.m3u8'
 
     cmd = sleep+' '+str(delay)+';'+ffmpeg+\
      ' -loglevel error'+\
      ' -i '+url+\
      ' -t '+str(length)+\
-     ' -codec copy'+\
+     ' -ab 96k -acodec mp3'+\
      ' -movflags'+\
      ' -faststart'+\
      ' '+path
     subprocess.check_call(cmd, shell=True)
+#     ' -codec copy'+\
+# WindowsのiTunesはaacは再生できない
+#     ' -ab 64k -acodec aac'+\
+
 
 def rec_radiko(ch,length,filename):
     import re
@@ -45,10 +49,17 @@ def rec_radiko(ch,length,filename):
     cmd = wget+' -q --header="pragma: no-cache" \
      --header="X-Radiko-App: pc_html5" \
      --header="X-Radiko-App-Version: 0.0.1" \
-     --header="X-Radiko-User: test-stream" \
+     --header="X-Radiko-User: dummy_user" \
      --header="X-Radiko-Device:pc" \
-     --no-check-certificate --post-data="\\r\\n" \
-     --save-headers https://radiko.jp/v2/api/auth1_fms -O -'
+     --no-check-certificate  \
+     --save-headers https://radiko.jp/v2/api/auth1 -O -'
+#    cmd = wget+' -q --header="pragma: no-cache" \
+#     --header="X-Radiko-App: pc_html5" \
+#     --header="X-Radiko-App-Version: 0.0.1" \
+#     --header="X-Radiko-User: test-stream" \
+#     --header="X-Radiko-Device:pc" \
+#     --no-check-certificate --post-data="\\r\\n" \
+#     --save-headers https://radiko.jp/v2/api/auth1_fms -O -'
     auth1_fms_body = subprocess.check_output(cmd,shell=True).decode('utf-8')
     pattern = r'x-radiko-authtoken: ([\w-]+)'
     authtoken = re.search(pattern, auth1_fms_body, re.IGNORECASE).groups()[0]
@@ -68,12 +79,19 @@ def rec_radiko(ch,length,filename):
 #    print(partialkey)
 
     cmd = wget+' -q --header="pragma: no-cache" \
-     --header="X-Radiko-User: test-stream" \
+     --header="X-Radiko-User: dummy_user" \
      --header="X-Radiko-Device: pc" \
      --header="X-Radiko-AuthToken: '+authtoken+'" \
      --header="X-Radiko-PartialKey: '+partialkey+'" \
      --no-check-certificate \
-     --post-data="\\r\\n" https://radiko.jp/v2/api/auth2_fms -O -'
+     https://radiko.jp/v2/api/auth2 -O -'
+#    cmd = wget+' -q --header="pragma: no-cache" \
+#     --header="X-Radiko-User: test-stream" \
+#     --header="X-Radiko-Device: pc" \
+#     --header="X-Radiko-AuthToken: '+authtoken+'" \
+#     --header="X-Radiko-PartialKey: '+partialkey+'" \
+#     --no-check-certificate \
+#     --post-data="\\r\\n" https://radiko.jp/v2/api/auth2_fms -O -'
     auth2_fms_body = subprocess.check_output(cmd,shell=True).decode('utf-8')
 #    print(auth2_fms_body)
 
@@ -82,15 +100,19 @@ def rec_radiko(ch,length,filename):
      ' -headers "X-Radiko-Authtoken: '+authtoken+'"'+\
      ' -i '+stream_url+\
      ' -t '+str(length) +\
-     ' -codec copy'+\
+     ' -ab 128k -acodec mp3'+\
      ' -movflags'+\
      ' -faststart'+\
      ' '+filename
     subprocess.check_call(cmd, shell=True)
 
+#     ' -codec copy'+\
+
 def rec_agqr(length, filename):
-    delay = 40
-    stream_url = 'https://fms2.uniqueradio.jp/agqr10/aandg1.m3u8'
+    delay = 45
+    stream_url = 'https://agcdn02.cdnext.stream.ne.jp/hls1/basic/data/prog_index.m3u8'
+#    stream_url = 'https://fms2.uniqueradio.jp/agqr10/aandg3.m3u8'
+#    stream_url = 'https://www.uniqueradio.jp/agplayer5/hls/mbr-ff.m3u8'
 
     cmd = sleep+' '+str(delay)+';'+ffmpeg+ \
      ' -loglevel error -i '+stream_url+ \
@@ -99,17 +121,6 @@ def rec_agqr(length, filename):
      +filename
     subprocess.check_call(cmd, shell=True)
 
-
-def encode(input, output ,codec):
-    if codec == 'aac':
-        cmd = ffmpeg+' -loglevel quiet -y -i '+input+' -codec copy '+output
-    if codec == 'aacradiko':
-        cmd = ffmpeg+' -loglevel quiet -y -i '+input+' -ab 48k -ar 48k -acodec aac '+output
-    elif codec == 'mp4':
-        cmd = ffmpeg+' -loglevel quiet -y -i '+input+' -s 320x240 -acodec copy '+output
-    elif codec == 'mp3':
-        cmd = ffmpeg+' -loglevel quiet -y -i '+input+' -ab 128k -acodec mp3 '+output
-    subprocess.check_call(cmd, shell=True)
 
 def makepodcast(title,url,path):
     import glob
@@ -192,34 +203,33 @@ def main():
     podcast_dir=data['path']['podcast_dir']
     podcast_url=data['path']['podcast_url']
 
-    print(podcast_dir)
-    print(podcast_url)
-
     for item in data['schedule']:
-        print(item)
         if item['record']:  #録音するかどうか
             ch=item['ch']
             title=item['title']
 
             for day in item['wday']: #曜日の取り出し
-
                	if youbi[stime.weekday()] == day: #対象曜日かどうか
-                    h=int(item['time'].split(':')[0]) #予約した時
-                    m=int(item['time'].split(':')[1]) #予約した分
-                    ptime = date + datetime.timedelta(hours=h,minutes=m) #program time
+                    for time in item["time"]: #録音開始時間の取り出し
+                        h=int(time.split(':')[0]) #予約した時
+                        m=int(time.split(':')[1]) #予約した分
+                        ptime = date + datetime.timedelta(hours=h,minutes=m) #program time
 
-                    if abs((now-ptime).total_seconds()) < 60: #予約した時間かどうか（60秒以内なら予約時間と一致）
-                        length = item['length']*60+30
-                        filename = title+'_'+str(ptime.strftime('%Y%m%dT%H%M'))
-                        if ch in nhk:
-                            path = podcast_dir+title+'/'+filename+'.aac'
-                            rec_nhk(ch, length, path)
-                        elif ch in radiko:
-                            path = podcast_dir+title+'/'+filename+'.aac'
-                            rec_radiko(ch, length, path)
-                        elif ch in agqr:
-                            path = podcast_dir+title+'/'+filename+'.mp4'
-                            rec_agqr(length, path)
-                        makepodcast(item['jtitle'],podcast_url+title+'/',podcast_dir+title+'/')
+                        if abs((now-ptime).total_seconds()) < 60: #予約した時間かどうか（60秒以内なら予約時間と一致）
+                            length = item['length']*60+30
+                            if item['longfilename']: #長いファイル名のチェック
+                                filename = title+'_'+str(ptime.strftime('%Y%m%dT%H%M'))
+                            else:
+                                filename = title+'_'+str(ptime.strftime('%Y%m%d'))
+                            if ch in nhk:
+                                path = podcast_dir+title+'/'+filename+'.mp3'
+                                rec_nhk(ch, length, path)
+                            elif ch in radiko:
+                                path = podcast_dir+title+'/'+filename+'.mp3'
+                                rec_radiko(ch, length, path)
+                            elif ch in agqr:
+                                path = podcast_dir+title+'/'+filename+'.mp4'
+                                rec_agqr(length, path)
+                            makepodcast(item['jtitle'],podcast_url+title+'/',podcast_dir+title+'/')
 
 if __name__ == '__main__': main()
