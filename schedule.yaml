@@ -37,6 +37,7 @@ schedule:
   time: 
    -'08:50'
   length: 16
+  longfilename: true
 
 - record: true
   jtitle: JetStream
@@ -51,6 +52,7 @@ schedule:
   time:
    - '00:00'
   length: 55
+  longfilename: true
 
 - record: true
   jtitle: 内田真礼とおはなししません？
@@ -60,3 +62,4 @@ schedule:
   time:
    - '20:30'
   length: 30
+  longfilename: true
